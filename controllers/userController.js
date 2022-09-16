@@ -145,3 +145,51 @@ exports.resetPassword = BigPromise(async (req, res, next)=>{
 
     cookieToken(user, res);
 })
+
+
+exports.getLoggedInUserDetails = BigPromise( async (req, res, next) => {
+
+    /**
+     * req.user never exists, 
+     * we are injecting it with the help of middleware, 
+     * go through user.js file in middlewares filder for more understanding!
+     */
+
+   const user = await User.findById(req.user.id) ;
+
+   res.status(200).json({
+    success : true,
+    user
+   })
+})
+
+exports.changePassword = BigPromise(async (req, res, next) => {
+
+    /**
+     * req.user never exists, 
+     * we are injecting it with the help of middleware, 
+     * go through user.js file in middlewares filder for more understanding!
+     */
+
+    const userId = req.user.id
+
+    const user = await User.findById(userId).select("+password");
+
+    const {oldPassword, newPassword} = req.body;
+    const isCorrectOldPassword = await user.isValidPassword(oldPassword);
+
+    if(!isCorrectOldPassword){
+        return next(new CustomError("old password is incorrect", 400));
+    }
+
+    if(oldPassword === newPassword){
+        return next(new CustomError("You cannot reset the password to old password again", 400));
+    }
+
+    user.password = req.body.newPassword;
+    await user.save();
+
+    cookieToken(user, res)
+
+
+})
