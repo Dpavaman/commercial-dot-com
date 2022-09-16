@@ -6,6 +6,7 @@ const fileUpload = require('express-fileupload');
 const cloudinary = require('cloudinary');
 const user = require('../models/user');
 const mailHelper = require('../utils/emailHelper');
+const crypto = require('crypto')
 
 exports.signup = BigPromise(async (req, res, next) => {
 
@@ -88,7 +89,7 @@ exports.forgotPassword = BigPromise(async (req, res, next) => {
     const forgotToken = user.getForgotPsswordToken();
     await user.save({validateBeforeSave : false})  // Just save forgotPasswordToken to db without validating schema;
 
-    const redirectUrl = `${req.protocol}://${req.get("host")}/password/reset/${forgotToken}`;
+    const redirectUrl = `${req.protocol}://${req.get("host")}/api/v1/password/reset/${forgotToken}`;
     const message = `Please visit this url to reset your password \n\n ${redirectUrl}`;
 
 
@@ -113,4 +114,34 @@ exports.forgotPassword = BigPromise(async (req, res, next) => {
         return next(new CustomError(error.message, 500))
     }
 
+})
+
+exports.resetPassword = BigPromise(async (req, res, next)=>{
+    const token = req.params.token;
+
+    //the token is not encrypted, we have to encrypt it and compare. a direct comparision would fail verification
+
+    const encryptToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+        forgotPasswordToken : encryptToken, 
+        forgotPasswordExpiry : {$gt : Date.now()}
+    })
+
+    if(!user){
+        return next(new CustomError('Token is invalid or expired', 400));
+    };
+
+    // we need both password and confirm-password fields at this stage to be passed from frontend
+    if(req.body.password !== req.body.confirmPassword){
+        return next(new CustomError('Password and Confirm Password are not matching'))
+    };
+
+    user.password = req.body.password
+    user.forgotPasswordExpiry = undefined;
+    user.forgotPasswordToken = undefined;
+    await user.save({validateBeforeSave : false});
+
+
+    cookieToken(user, res);
 })

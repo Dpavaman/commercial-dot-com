@@ -46,6 +46,7 @@ const userSchema = new mongoose.Schema({
 
 
 // encrypt password before save - Hooks
+// Arrow functions won't work here
 
 userSchema.pre('save', async function(next){
     if(!this.isModified('password')){
