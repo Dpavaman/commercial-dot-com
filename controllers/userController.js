@@ -35,3 +35,42 @@ exports.signup = BigPromise(async (req, res, next) => {
 
     cookieToken(user, res)
 })
+
+exports.login = BigPromise(async (req, res, next) => {
+    const {email, password} = req.body;
+
+    //Check for email and password existance
+    if(!email || !password){
+        return next(new CustomError('please provide email and password', 400));
+    }
+
+    const user = await User.findOne({email}).select("+password") // by default the response comes without password, as specified in Schema. 
+
+    // if user not found in DB
+    if(!user){
+        return next(new CustomError("Email or password does not match", 404));
+    }
+
+    const isValidPassword = await user.isValidPassword(password);
+
+    // if password is incorrect
+    if(!isValidPassword){
+        return next(new CustomError("Email or password does not match", 400));
+    }
+
+    // if all goes good, 
+    cookieToken(user, res)
+
+
+})
+
+exports.logout = BigPromise(async (req, res, next) => {
+    res.cookie('token', null, {
+        expires : new Date(Date.now()),
+        httpOnly : true
+    })
+    res.status(200).json({
+        success : true,
+        message : "Logout success"
+    })
+})
