@@ -193,3 +193,65 @@ exports.changePassword = BigPromise(async (req, res, next) => {
 
 
 })
+
+exports.updateUserDetails = BigPromise(async (req, res, next) => {
+
+    const {email, name} = req.body;
+
+    if(!email || !name){
+        return next(new CustomError("insufficient data to update user profile", 400))
+    }
+
+    const newData = {
+        name,
+        email 
+    }
+
+    /**
+     * if Image is received through request,
+     * delete the old image from cloudinary, and update new image
+     */
+
+    if(req.files && req.files.photo){
+        const user = await User.findById(req.user.id);
+        const imageId = user.photo.id   // from schema
+
+        if(imageId){
+            const resp = await cloudinary.v2.uploader.destroy(imageId);  // Delete existing photo on cloudinary if exists
+        }
+
+
+        /**
+         * Upload new image received through request
+         */
+
+        const result = await cloudinary.v2.uploader.upload(req.files.photo.tempFilePath, {
+            folder : 'commercial-dot-com-users',
+            width : 150,
+            crop : 'scale'
+        })
+
+        if(result){
+            newData.photo = {
+                id : result.public_id,
+                secure_url : result.secure_url
+            }
+        }
+    }
+
+    /**
+     * req.user never exists, 
+     * we are injecting it with the help of middleware, 
+     * go through user.js file in middlewares filder for more understanding!
+     */
+    const user = await User.findByIdAndUpdate(req.user.id, newData, {
+        new : true, 
+        runValidators : true,
+        useFindAndModify : false,  //Backward compatibility
+    });
+
+    res.status(200).json({
+        success : true,
+        user
+    })
+})
