@@ -30,11 +30,9 @@ const userSchema = new mongoose.Schema({
     photo: {
         id: {
             type: String,
-            required: true
         },
         secure_url: {
             type: String,
-            required: true
         }
     },
     forgotPasswordToken: String,
@@ -62,14 +60,14 @@ userSchema.methods.isValidPassword = async function(inputPassword){
 }
 
 //create and return JsonWebToken
-userSchema.method.getToken = function(){
+userSchema.methods.getToken = function(){
     return jwt.sign({id : this._id, email : this.email}, process.env.JWT_SECRET, {
         expiresIn : process.env.JWT_EXPIRY
     })
 }
 
 // generate forgot password token (string)
-userSchema.method.getForgotPsswordToken = function(){
+userSchema.methods.getForgotPsswordToken = function(){
     // generate a long and random string
     const token = crypto.randomBytes(20).toString('hex');
 
