@@ -299,6 +299,25 @@ exports.admin_updateOneUser = BigPromise(async (req, res, next) =>{
 
 })
 
+exports.admin_deleteOneUser = BigPromise(async ( req, res, next) => {
+
+    const user = await User.findById(req.params.id);
+
+    if(!user){
+        return next(new CustomError("No user exists in the DB", 401));
+    }
+
+    const imageId = user.photo.id;
+    await cloudinary.v2.uploader.destroy(imageId);
+    await user.remove()
+
+    res.status(200).json({
+        success : true,
+    })
+
+
+})
+
 
 
 
