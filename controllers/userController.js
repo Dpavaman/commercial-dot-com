@@ -4,6 +4,8 @@ const CustomError = require('../utils/customError');
 const cookieToken = require('../utils/cookieToken');
 const fileUpload = require('express-fileupload');
 const cloudinary = require('cloudinary');
+const user = require('../models/user');
+const mailHelper = require('../utils/emailHelper');
 
 exports.signup = BigPromise(async (req, res, next) => {
 
@@ -73,4 +75,42 @@ exports.logout = BigPromise(async (req, res, next) => {
         success : true,
         message : "Logout success"
     })
+})
+
+exports.forgotPassword = BigPromise(async (req, res, next) => {
+    const {email} = req.body;
+    const user = await User.findOne({email})
+
+    if(!user){
+        return next(new CustomError('Email is not registered', 400))
+    }
+
+    const forgotToken = user.getForgotPsswordToken();
+    await user.save({validateBeforeSave : false})  // Just save forgotPasswordToken to db without validating schema;
+
+    const redirectUrl = `${req.protocol}://${req.get("host")}/password/reset/${forgotToken}`;
+    const message = `Please visit this url to reset your password \n\n ${redirectUrl}`;
+
+
+    try {
+        await mailHelper({
+            toEmail : user.email,
+            subject : "commercial-dot-com - Reset Password",
+            message
+        })
+
+        res.status(200).json({
+            success : true,
+            message : `Email sent successfully to ${email}`
+        })
+       
+    } catch (error) {
+        // reset forgotpasswordToken and forgotpasswordExpiry in DB if email-service fails
+        user.forgotPasswordToken = undefined
+        user.forgotPasswordExpiry= undefined
+        await user.save({validateBeforeSave : false});
+
+        return next(new CustomError(error.message, 500))
+    }
+
 })
