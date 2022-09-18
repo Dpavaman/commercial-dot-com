@@ -1,4 +1,3 @@
-const { urlencoded } = require('express');
 const express = require('express')
 // use dotenv here if required
 const app = express()
@@ -33,6 +32,7 @@ app.use(morgan('tiny'))
 // import all routes here
 const home = require('./routes/home');
 const user = require('./routes/user');
+const product = require('./routes/product');
 
 
 // temp check for file upload
@@ -44,6 +44,7 @@ app.get('/signuptest', (req, res)=>{
 //router middleware
 app.use('/api/v1/', home)
 app.use('/api/v1/', user)
+app.use('/api/v1/', product)
 
 
 
