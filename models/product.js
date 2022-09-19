@@ -32,6 +32,11 @@ const productSchema = new mongoose.Schema({
         type : String, 
         required : [true, "Please provide product category"],
     },
+    // Stocks are updated by admin everytime any order gets delivered. 
+    stock : {
+        type : Number,
+        required : [true, "Please provide stocks details"]
+    },
     brand : {
         type : String,
         required : [true, "Please provide product brand"]

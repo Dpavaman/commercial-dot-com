@@ -1,7 +1,7 @@
 const BigPromise = require('..//middlewares/bigPromise')
 const stripe = require('stripe')(process.env.STRIPE_SECRET);
 const Razorpay = require('razorpay')
-const {nanoid} = require('nanoid')
+const { v4: uuidv4 } = require('uuid');
 
 exports.sendStripeKey = BigPromise(async (req, res, next) => {
     res.json({
@@ -39,7 +39,7 @@ exports.captureRazorPayPayment = BigPromise(async (req, res, next) => {
     const options = {
         amount : req.body.amount,   // Amount in smallest currency unit
         currency : "INR",
-        receipt : nanoid()
+        receipt : uuidv4()
     }
 
     const order = await instance.orders.create(options);
